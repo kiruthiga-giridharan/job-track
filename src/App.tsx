@@ -87,6 +87,7 @@ function Board() {
               date_posted: job.date_posted,
               salary: job.salary,
               tags: job.tags,
+              skills: job.skills ?? [],
             }}
             heading="Edit Job"
             submitLabel="Save changes ✓"

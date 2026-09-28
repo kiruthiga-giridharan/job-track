@@ -50,7 +50,7 @@ export function tabCounts(jobs: Job[]): Record<TabKey, number> {
 function matchesSearch(job: Job, search: string): boolean {
   const words = search.toLowerCase().split(/\s+/).filter(Boolean)
   if (!words.length) return true
-  const haystack = [job.title, job.company, job.location, job.description, job.notes, job.salary, ...job.tags]
+  const haystack = [job.title, job.company, job.location, job.description, job.notes, job.salary, ...job.tags, ...job.skills]
     .join('\n')
     .toLowerCase()
   return words.every(w => haystack.includes(w))
@@ -70,6 +70,11 @@ export function filterJobs(jobs: Job[], tab: TabKey, f: Filters): Job[] {
       return true
     })
     .sort(compareNewestFirst)
+}
+
+function dedupeCaseless(values: string[]): string[] {
+  const seen = new Set<string>()
+  return values.filter(v => !seen.has(v.toLowerCase()) && seen.add(v.toLowerCase()))
 }
 
 export function uniqueSorted(values: string[]): string[] {
@@ -133,6 +138,8 @@ export function normaliseJobInput(input: JobInput): JobInput {
     description: input.description.trim(),
     date_posted: input.date_posted || null,
     tags: uniqueSorted(input.tags).slice(0, 12),
+    // Skills keep their order: the assistant lists the most important first.
+    skills: dedupeCaseless(input.skills.map(s => s.trim()).filter(Boolean)).slice(0, 20),
   }
 }
 

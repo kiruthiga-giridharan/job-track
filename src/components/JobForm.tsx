@@ -14,6 +14,7 @@ export function blankJobInput(): JobInput {
     date_posted: null,
     salary: '',
     tags: [],
+    skills: [],
   }
 }
 
@@ -37,6 +38,7 @@ export function JobForm({
 }) {
   const [form, setForm] = useState<JobInput>(initial)
   const [tagsText, setTagsText] = useState(initial.tags.join(', '))
+  const [skillsText, setSkillsText] = useState(initial.skills.join(', '))
   const [errors, setErrors] = useState<FormErrors>({})
   const [saving, setSaving] = useState(false)
   const [submitError, setSubmitError] = useState('')
@@ -48,7 +50,8 @@ export function JobForm({
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    const input: JobInput = { ...form, tags: tagsText.split(',').map(t => t.trim()).filter(Boolean) }
+    const splitList = (text: string) => text.split(',').map(t => t.trim()).filter(Boolean)
+    const input: JobInput = { ...form, tags: splitList(tagsText), skills: splitList(skillsText) }
     const errs = validateJobInput(input)
     setErrors(errs)
     if (Object.values(errs).some(Boolean)) return
@@ -115,6 +118,16 @@ export function JobForm({
               placeholder="e.g. Design, Remote, Full-time"
               value={tagsText}
               onChange={e => setTagsText(e.target.value)}
+            />
+          </Field>
+        </div>
+        <div className="sm:col-span-2">
+          <Field label="Skills (comma-separated)" hint="Most important first — the assistant fills these in from the posting.">
+            <input
+              className="doodle-input text-sm"
+              placeholder="e.g. Salesforce, Photoshop, Budget management"
+              value={skillsText}
+              onChange={e => setSkillsText(e.target.value)}
             />
           </Field>
         </div>

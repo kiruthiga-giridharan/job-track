@@ -50,6 +50,21 @@ export function Tag({ label }: { label: string }) {
   return <span className={`tag-pill ${teal ? 'text-teal-700 border-teal-300 bg-teal-50' : 'text-purple-700 border-purple-300 bg-purple-soft'}`}>{label}</span>
 }
 
+/** A job's required skills, styled apart from tags. `limit` collapses the rest into "+N more". */
+export function SkillList({ skills, limit }: { skills: string[]; limit?: number }) {
+  if (!skills.length) return null
+  const shown = limit ? skills.slice(0, limit) : skills
+  const hidden = skills.length - shown.length
+  return (
+    <ul className="flex flex-wrap gap-1.5" aria-label="Skills">
+      {shown.map(s => (
+        <li key={s} className="skill-chip">{s}</li>
+      ))}
+      {hidden > 0 && <li className="text-xs self-center" style={{ color: '#A899B5' }}>+{hidden} more</li>}
+    </ul>
+  )
+}
+
 export function AppliedToggle({ on, onChange, disabled }: { on: boolean; onChange: (v: boolean) => void; disabled?: boolean }) {
   return (
     <button

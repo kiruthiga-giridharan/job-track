@@ -3,7 +3,7 @@ import { relativeDay } from '../lib/jobs'
 import type { Job } from '../lib/types'
 import { ApplyButton } from './ApplyButton'
 import { NotesField } from './NotesField'
-import { AppliedToggle, Tag } from './ui'
+import { AppliedToggle, SkillList, Tag } from './ui'
 
 export interface JobActions {
   setApplied: (id: string, v: boolean) => void
@@ -48,6 +48,14 @@ export function JobCard({ job, actions }: { job: Job; actions: JobActions }) {
           {relativeDay(job.date_added)}
         </span>
       </div>
+
+      {/* Skills */}
+      {job.skills?.length > 0 && (
+        <div className="flex items-start gap-2 mb-3">
+          <span className="text-xs font-semibold pt-0.5 flex-shrink-0" style={{ color: '#6B5B7B' }}>Skills</span>
+          <SkillList skills={job.skills} limit={8} />
+        </div>
+      )}
 
       {/* Description */}
       {job.description && (

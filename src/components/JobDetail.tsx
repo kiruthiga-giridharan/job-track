@@ -4,7 +4,7 @@ import type { Job } from '../lib/types'
 import { ApplyButton } from './ApplyButton'
 import type { JobActions } from './JobCard'
 import { NotesField } from './NotesField'
-import { AppliedToggle, BackLink, MUTED_BTN, PINK_BTN, SECONDARY_BTN, Tag } from './ui'
+import { AppliedToggle, BackLink, MUTED_BTN, PINK_BTN, SECONDARY_BTN, SkillList, Tag } from './ui'
 
 export function JobDetail({
   job,
@@ -59,6 +59,15 @@ export function JobDetail({
         </div>
 
         <div className="squiggle mb-5" />
+
+        {job.skills?.length > 0 && (
+          <>
+            <h4 className="font-semibold text-sm mb-2" style={{ color: '#6B5B7B' }}>SKILLS</h4>
+            <div className="mb-6">
+              <SkillList skills={job.skills} />
+            </div>
+          </>
+        )}
 
         <h4 className="font-semibold text-sm mb-2" style={{ color: '#6B5B7B' }}>DESCRIPTION</h4>
         <p className="text-sm leading-relaxed mb-6 whitespace-pre-wrap break-words" style={{ color: '#4A3B5C' }}>

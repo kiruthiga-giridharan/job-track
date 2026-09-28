@@ -24,7 +24,7 @@ export type ExtractResponse =
 
 export interface Deps {
   fetch: typeof fetch
-  ai: ((text: string, hints: string, opts: { withDescription: boolean }) => Promise<{ draft: Partial<JobDraft>; refused: boolean }>) | null
+  ai: ((text: string, hints: string, opts: { withDescription: boolean }) => Promise<{ draft: Partial<JobDraft>; refused: boolean; reason?: string }>) | null
 }
 
 const MAX_BYTES = 3_000_000
@@ -157,7 +157,14 @@ export async function handleExtract(body: ExtractRequest, deps: Deps): Promise<{
       // model to write one out (slow) when all we have is raw page text.
       const withDescription = !pasted && !structured?.description
       const result = await deps.ai(sourceText, hints, { withDescription })
-      if (result.refused) warnings.push('The assistant couldn’t process this posting, so basic extraction was used. Please check every field.')
+      if (result.refused) {
+        console.warn('AI extraction gave no result:', result.reason)
+        warnings.push(
+          sourceText.length < 1500
+            ? 'The assistant couldn’t find job details in this text — make sure you pasted the whole posting (title, responsibilities, requirements), not just part of it.'
+            : 'The assistant couldn’t process this posting, so basic extraction was used. Please check every field.',
+        )
+      }
       else aiDraft = result.draft
     } catch (err) {
       console.error('AI extraction failed', err)
@@ -171,6 +178,8 @@ export async function handleExtract(body: ExtractRequest, deps: Deps): Promise<{
   const draft = mergeDrafts(heuristics, aiDraft, structured, {
     apply_url: applyUrlRaw || structured?.apply_url || postingUrl,
   })
+  // Skills: the model's short, ranked list beats a page's structured `skills`, which is often prose.
+  if (aiDraft?.skills?.length) draft.skills = mergeDrafts({ skills: aiDraft.skills }).skills
   // Pasted descriptions: keep the user's own text if the model returned nothing useful.
   if (!draft.description && pasted) draft.description = pasted.slice(0, 100_000)
   if (!draft.apply_url) warnings.push('No application URL was found — add one before saving.')

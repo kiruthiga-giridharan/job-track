@@ -29,6 +29,7 @@ function draftToInput(d: ExtractedDraft): JobInput {
     date_posted: d.date_posted || null,
     salary: d.salary,
     tags: d.tags,
+    skills: d.skills ?? [],
   }
 }
 

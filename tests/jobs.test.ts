@@ -15,6 +15,7 @@ function job(p: Partial<Job>): Job {
     date_posted: null,
     salary: '',
     tags: [],
+    skills: [],
     notes: '',
     applied: false,
     applied_at: null,
@@ -58,7 +59,7 @@ describe('filterJobs', () => {
 })
 
 describe('validation', () => {
-  const base = { title: 'T', company: 'C', location: '', description: '', apply_url: 'https://c.example/apply', date_added: '2026-09-28', date_posted: null, salary: '', tags: [] }
+  const base = { title: 'T', company: 'C', location: '', description: '', apply_url: 'https://c.example/apply', date_added: '2026-09-28', date_posted: null, salary: '', tags: [], skills: [] }
 
   it('accepts a complete job', () => {
     expect(validateJobInput(base)).toEqual({})

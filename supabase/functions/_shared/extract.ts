@@ -11,6 +11,7 @@ export interface JobDraft {
   date_posted: string // YYYY-MM-DD or ''
   salary: string
   tags: string[]
+  skills: string[]
 }
 
 export type FetchFailureCode = 'invalid_url' | 'blocked' | 'not_found' | 'fetch_failed' | 'unreadable' | 'not_html'
@@ -27,7 +28,7 @@ export class FetchFailure extends Error {
 export const MAX_TEXT_CHARS = 60_000
 
 export function emptyDraft(): JobDraft {
-  return { title: '', company: '', location: '', description: '', apply_url: '', date_posted: '', salary: '', tags: [] }
+  return { title: '', company: '', location: '', description: '', apply_url: '', date_posted: '', salary: '', tags: [], skills: [] }
 }
 
 // ─── URL safety ──────────────────────────────────────────────────────────────
@@ -234,6 +235,9 @@ export function extractJsonLdJob(html: string): Partial<JobDraft> | null {
       ...(remote ? ['Remote'] : []),
       ...employment.filter(Boolean).map(e => e.replace(/_/g, '-').toLowerCase().replace(/^\w/, c => c.toUpperCase())),
     ]
+    const skills = (Array.isArray(job.skills) ? job.skills.map(str) : str(job.skills).split(/[,;\n]/))
+      .map(s => decodeEntities(s).trim())
+      .filter(s => s && s.length <= 60)
     const datePosted = str(job.datePosted).slice(0, 10)
     return {
       title: decodeEntities(str(job.title)),
@@ -243,6 +247,7 @@ export function extractJsonLdJob(html: string): Partial<JobDraft> | null {
       date_posted: /^\d{4}-\d{2}-\d{2}$/.test(datePosted) ? datePosted : '',
       salary: formatSalary(job.baseSalary),
       tags,
+      ...(skills.length ? { skills } : {}),
       apply_url: str(job.url),
     }
   }
@@ -334,6 +339,11 @@ function cleanDate(v: string | undefined): string {
 }
 
 /** Layers sources left-to-right (later non-empty values win) and returns a clean, bounded draft. */
+function dedupeCaseless(values: string[]): string[] {
+  const seen = new Set<string>()
+  return values.filter(v => !seen.has(v.toLowerCase()) && seen.add(v.toLowerCase()))
+}
+
 export function mergeDrafts(...sources: (Partial<JobDraft> | null | undefined)[]): JobDraft {
   const out = emptyDraft()
   for (const s of sources) {
@@ -344,6 +354,7 @@ export function mergeDrafts(...sources: (Partial<JobDraft> | null | undefined)[]
     }
     if (s.date_posted && cleanDate(s.date_posted)) out.date_posted = cleanDate(s.date_posted)
     if (Array.isArray(s.tags) && s.tags.length) out.tags = s.tags
+    if (Array.isArray(s.skills) && s.skills.length) out.skills = s.skills
   }
   out.title = out.title.slice(0, 300)
   out.company = out.company.slice(0, 300)
@@ -351,6 +362,7 @@ export function mergeDrafts(...sources: (Partial<JobDraft> | null | undefined)[]
   out.salary = out.salary.slice(0, 200)
   out.description = out.description.slice(0, 100_000)
   out.tags = [...new Set(out.tags.map(t => t.trim()).filter(t => t && t.length <= 40))].slice(0, 8)
+  out.skills = dedupeCaseless(out.skills.map(t => t.trim()).filter(t => t && t.length <= 60)).slice(0, 15)
   if (out.apply_url && !parseWebUrl(out.apply_url)) out.apply_url = ''
   return out
 }

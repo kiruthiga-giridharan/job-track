@@ -9,6 +9,7 @@ export interface Job {
   date_posted: string | null
   salary: string
   tags: string[]
+  skills: string[]
   notes: string
   applied: boolean
   applied_at: string | null
@@ -20,7 +21,7 @@ export interface Job {
 /** Fields a person enters when adding or editing a job. */
 export type JobInput = Pick<
   Job,
-  'title' | 'company' | 'location' | 'description' | 'apply_url' | 'date_added' | 'date_posted' | 'salary' | 'tags'
+  'title' | 'company' | 'location' | 'description' | 'apply_url' | 'date_added' | 'date_posted' | 'salary' | 'tags' | 'skills'
 >
 
 export type JobPatch = Partial<JobInput & Pick<Job, 'notes' | 'applied' | 'irrelevant'>>
@@ -34,6 +35,7 @@ export interface ExtractedDraft {
   date_posted: string
   salary: string
   tags: string[]
+  skills: string[]
 }
 
 export type ExtractResult =

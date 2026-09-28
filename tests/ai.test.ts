@@ -40,7 +40,19 @@ describe('extractWithClaude', () => {
 
   it('reports refusals instead of returning empty fields', async () => {
     const { client } = fakeClient({ stop_reason: 'refusal', parsed_output: null })
-    expect(await extractWithClaude('x', { apiKey: 'k', client })).toEqual({ draft: {}, refused: true })
+    const res = await extractWithClaude('x', { apiKey: 'k', client })
+    expect(res).toMatchObject({ draft: {}, refused: true })
+    expect(res.reason).toMatch(/refusal.*retry: refusal/)
+  })
+
+  it('retries once on Haiku when the main model returns nothing', async () => {
+    const parse = vi
+      .fn()
+      .mockResolvedValueOnce({ stop_reason: 'max_tokens', parsed_output: null })
+      .mockResolvedValueOnce({ stop_reason: 'end_turn', parsed_output: { title: 'PM' } })
+    const client = { beta: { messages: { parse } } } as unknown as Anthropic
+    expect(await extractWithClaude('x', { apiKey: 'k', client })).toEqual({ draft: { title: 'PM' }, refused: false })
+    expect(parse.mock.calls.map(c => (c[0] as { model: string }).model)).toEqual([DEFAULT_MODEL, 'claude-haiku-4-5'])
   })
 
   it('uses a forced tool call for Anthropic-compatible gateways', async () => {

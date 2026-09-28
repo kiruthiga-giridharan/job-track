@@ -109,6 +109,14 @@ describe('handleExtract', () => {
     expect(res.json.draft.apply_url).toBe('https://jobs.bloom.example/123')
   })
 
+  it('uses the assistant’s skills and skips asking it for a description of pasted text', async () => {
+    const ai = vi.fn(async () => ({ draft: { title: 'Designer', skills: ['Figma', 'figma', ' Prototyping '] }, refused: false }))
+    const res = await handleExtract({ description: 'We need Figma skills.', applyUrl: 'https://a.example/1' }, { fetch: vi.fn(), ai })
+    expect((ai.mock.calls[0] as unknown[])[2]).toEqual({ withDescription: false })
+    expect(res.json.ok && res.json.draft.skills).toEqual(['Figma', 'Prototyping'])
+    expect(res.json.ok && res.json.draft.description).toBe('We need Figma skills.')
+  })
+
   it('explains when a site blocks access', async () => {
     const fetchMock = vi.fn(async () => htmlResponse('Forbidden', 403))
     const res = await handleExtract({ url: 'https://www.linkedin.com/jobs/view/1' }, { fetch: fetchMock as unknown as typeof fetch, ai: null })

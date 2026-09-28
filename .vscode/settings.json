@@ -1,0 +1,6 @@
+{
+  // Edge Functions run on Deno; everything else is Node/Vite.
+  "deno.enablePaths": ["supabase/functions"],
+  "deno.config": "supabase/functions/extract-job/deno.json",
+  "typescript.tsdk": "node_modules/typescript/lib"
+}

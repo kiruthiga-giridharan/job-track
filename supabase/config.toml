@@ -1,0 +1,13 @@
+# Minimal Supabase CLI config. Unlisted settings use the CLI defaults.
+project_id = "kittu-job-board"
+
+[auth]
+site_url = "http://localhost:8443"
+additional_redirect_urls = ["http://localhost:8443", "http://127.0.0.1:8443"]
+
+[auth.email]
+enable_signup = false         # no sign-in: the board is public
+enable_confirmations = false
+
+[functions.extract-job]
+verify_jwt = false          # public board: no sign-in, so no user token to check

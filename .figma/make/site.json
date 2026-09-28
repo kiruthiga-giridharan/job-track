@@ -1,0 +1,10 @@
+{
+  "description": "Streamline job management for small teams with a user-friendly platform that organizes job postings, tracks applications, and facilitates collaboration.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}

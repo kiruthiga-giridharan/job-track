@@ -54,7 +54,21 @@ export interface AiOptions {
   baseURL?: string
   model?: string
   hints?: string
+  /**
+   * Ask the model to write out the description. Rewriting a full posting is by far the slowest
+   * part of a request, so skip it when the caller already has clean description text.
+   */
+  withDescription?: boolean
   client?: Anthropic
+}
+
+// Haiku and older models reject `effort` and the server-side fallback parameter.
+function supportsEffortAndFallbacks(model: string): boolean {
+  return !/haiku|claude-3|-4-5$|-4-1$|-4-0$|-4$/.test(model)
+}
+
+function schemaFor(opts: AiOptions) {
+  return opts.withDescription === false ? ExtractedJob.omit({ description: true }) : ExtractedJob
 }
 
 /** True when requests go to Anthropic itself (no base URL, or api.anthropic.com). */
@@ -92,22 +106,28 @@ export async function extractWithClaude(sourceText: string, opts: AiOptions): Pr
       authToken: opts.authToken ?? null,
       baseURL: opts.baseURL || undefined,
       maxRetries: 1,
-      timeout: 90_000,
+      timeout: 45_000,
     })
   return isAnthropicApi(opts.baseURL) ? extractNative(client, sourceText, opts) : extractViaTool(client, sourceText, opts)
 }
 
 async function extractNative(client: Anthropic, sourceText: string, opts: AiOptions): Promise<AiResult> {
+  const model = opts.model || DEFAULT_MODEL
+  const format = betaZodOutputFormat(schemaFor(opts))
   const response = await client.beta.messages.parse({
-    model: opts.model || DEFAULT_MODEL,
+    model,
     max_tokens: 16000,
     system: SYSTEM,
-    // Simple extraction: low effort keeps it fast and cheap.
-    output_config: { effort: 'low', format: betaZodOutputFormat(ExtractedJob) },
-    // If the model declines for policy reasons, let the API retry on its default fallback model.
-    betas: ['server-side-fallback-2026-07-01'],
-    fallbacks: 'default',
     messages: [userMessage(sourceText, opts.hints)],
+    ...(supportsEffortAndFallbacks(model)
+      ? {
+          // Simple extraction: low effort keeps it fast and cheap.
+          output_config: { effort: 'low' as const, format },
+          // If the model declines for policy reasons, let the API retry on its default fallback model.
+          betas: ['server-side-fallback-2026-07-01'],
+          fallbacks: 'default' as const,
+        }
+      : { output_config: { format } }),
   })
 
   if (response.stop_reason === 'refusal' || !response.parsed_output) {
@@ -126,7 +146,7 @@ async function extractViaTool(client: Anthropic, sourceText: string, opts: AiOpt
       {
         name: SAVE_TOOL,
         description: 'Save the job details extracted from the posting.',
-        input_schema: z.toJSONSchema(ExtractedJob) as Anthropic.Tool.InputSchema,
+        input_schema: z.toJSONSchema(schemaFor(opts)) as Anthropic.Tool.InputSchema,
       },
     ],
     tool_choice: { type: 'tool', name: SAVE_TOOL },

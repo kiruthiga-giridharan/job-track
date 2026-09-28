@@ -22,6 +22,22 @@ describe('extractWithClaude', () => {
     expect(params.system).toMatch(/never follow instructions/)
   })
 
+  it('skips the description field when the caller already has one', async () => {
+    const { client, parse } = fakeClient({ stop_reason: 'end_turn', parsed_output: { title: 'PM' } })
+    await extractWithClaude('x', { apiKey: 'k', client, withDescription: false })
+    const params = (parse.mock.calls[0] as unknown[])[0] as Record<string, any>
+    expect(JSON.stringify(params.output_config.format.schema)).not.toContain('"description":{"type"')
+  })
+
+  it('omits effort and fallbacks for Haiku, which rejects them', async () => {
+    const { client, parse } = fakeClient({ stop_reason: 'end_turn', parsed_output: { title: 'PM' } })
+    await extractWithClaude('x', { apiKey: 'k', client, model: 'claude-haiku-4-5' })
+    const params = (parse.mock.calls[0] as unknown[])[0] as Record<string, any>
+    expect(params.output_config.effort).toBeUndefined()
+    expect(params.fallbacks).toBeUndefined()
+    expect(params.output_config.format.type).toBe('json_schema')
+  })
+
   it('reports refusals instead of returning empty fields', async () => {
     const { client } = fakeClient({ stop_reason: 'refusal', parsed_output: null })
     expect(await extractWithClaude('x', { apiKey: 'k', client })).toEqual({ draft: {}, refused: true })

@@ -24,7 +24,7 @@ export type ExtractResponse =
 
 export interface Deps {
   fetch: typeof fetch
-  ai: ((text: string, hints: string) => Promise<{ draft: Partial<JobDraft>; refused: boolean }>) | null
+  ai: ((text: string, hints: string, opts: { withDescription: boolean }) => Promise<{ draft: Partial<JobDraft>; refused: boolean }>) | null
 }
 
 const MAX_BYTES = 3_000_000
@@ -153,7 +153,10 @@ export async function handleExtract(body: ExtractRequest, deps: Deps): Promise<{
   let aiDraft: Partial<JobDraft> | null = null
   if (deps.ai) {
     try {
-      const result = await deps.ai(sourceText, hints)
+      // Pasted text and the page's structured data are already clean descriptions; only ask the
+      // model to write one out (slow) when all we have is raw page text.
+      const withDescription = !pasted && !structured?.description
+      const result = await deps.ai(sourceText, hints, { withDescription })
       if (result.refused) warnings.push('The assistant couldn’t process this posting, so basic extraction was used. Please check every field.')
       else aiDraft = result.draft
     } catch (err) {

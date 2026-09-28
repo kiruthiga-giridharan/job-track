@@ -39,7 +39,7 @@ Deno.serve(async req => {
   try {
     const { status, json } = await handleExtract((body ?? {}) as Record<string, string>, {
       fetch,
-      ai: apiKey || authToken ? (text, hints) => extractWithClaude(text, { apiKey, authToken, baseURL, model, hints }) : null,
+      ai: apiKey || authToken ? (text, hints, { withDescription }) => extractWithClaude(text, { apiKey, authToken, baseURL, model, hints, withDescription }) : null,
     })
     return reply(status, json)
   } catch (err) {
